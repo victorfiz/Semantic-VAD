@@ -61,11 +61,20 @@ async def text_to_speech(voice_id, text):
             }))
             logging.debug("Sent text to ElevenLabs API")
 
+            # Send an empty string to signal the end of input
+            await websocket.send(json.dumps({
+                "text": "",
+                "voice_settings": {"stability": 0.5, "similarity_boost": 0.8},
+                "xi_api_key": ELEVENLABS_API_KEY,
+            }))
+            logging.debug("Sent end-of-input signal to ElevenLabs API")
+
             audio_data = b""
             while True:
                 try:
                     message = await websocket.recv()
                     data = json.loads(message)
+                    logging.debug(f"Received message from ElevenLabs API: {data}")
                     if data.get("audio"):
                         logging.debug("Received audio data from ElevenLabs API")
                         audio_data += base64.b64decode(data["audio"])
