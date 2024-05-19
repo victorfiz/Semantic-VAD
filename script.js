@@ -1,111 +1,78 @@
 const activateButton = document.querySelector('#activate');
 const sendButton = document.querySelector('#send');
+const appendTextButton = document.querySelector('#appendText');
+appendTextButton.textContent = 'Append';
+document.body.appendChild(appendTextButton);
+
 let isRecording = false;
 let mediaRecorder;
 
+// Handle microphone activation
 activateButton.addEventListener('click', () => {
-    console.log('Activate button clicked.');
-    if (isRecording) {
-        console.log('Microphone is already activated.');
-        alert('Microphone is already activated.');
-        return;
-    }
+    if (isRecording) return alert('Microphone is already activated.');
 
     navigator.mediaDevices.getUserMedia({ audio: true }).then((stream) => {
-        console.log('Microphone access granted.');
-        console.log({ stream });
+        if (!MediaRecorder.isTypeSupported('audio/webm')) return alert('Browser not supported');
 
-        if (!MediaRecorder.isTypeSupported('audio/webm')) {
-            console.log('Browser does not support audio/webm.');
-            return alert('Browser not supported');
-        }
+        mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm' });
 
-        mediaRecorder = new MediaRecorder(stream, {
-            mimeType: 'audio/webm',
-        });
-        console.log('MediaRecorder created.');
-
+        // Connect to WebSocket for streaming audio
         const socket = new WebSocket('wss://api.deepgram.com/v1/listen', [
             'token',
             '87d2d3f1ceaf2da21fe2975880013d45d2ef84b1',
         ]);
-        console.log('WebSocket created.');
 
         socket.onopen = () => {
-            console.log('WebSocket connection opened.');
             document.querySelector('#status').textContent = 'Connected';
-            console.log({ event: 'onopen' });
 
-            mediaRecorder.addEventListener('dataavailable', async (event) => {
-                if (event.data.size > 0 && socket.readyState == 1) {
+            // Send audio data to WebSocket
+            mediaRecorder.addEventListener('dataavailable', (event) => {
+                if (event.data.size > 0 && socket.readyState === 1) {
                     socket.send(event.data);
                 }
             });
 
             mediaRecorder.start(1000);
-            console.log('MediaRecorder started.');
         };
 
+        // Handle received transcription data
         socket.onmessage = (message) => {
-            const received = JSON.parse(message.data);
-            const transcript = received.channel.alternatives[0].transcript;
-            if (transcript && received.is_final) {
-                console.log('Final transcript received:', transcript);
-                document.querySelector('#transcript').textContent += transcript + ' ';
+            const { channel: { alternatives }, is_final } = JSON.parse(message.data);
+            if (alternatives[0].transcript && is_final) {
+                document.querySelector('#transcript').textContent += alternatives[0].transcript + ' ';
             }
         };
 
-        socket.onclose = () => {
-            console.log('WebSocket connection closed.');
-            console.log({ event: 'onclose' });
-        };
-
-        socket.onerror = (error) => {
-            console.log('WebSocket error occurred.');
-            console.log({ event: 'onerror', error });
-        };
-    }).catch(error => {
-        console.error("Error accessing the microphone: ", error);
-    });
+        socket.onerror = (error) => console.error('WebSocket error:', error);
+    }).catch(error => console.error("Microphone access error:", error));
 
     isRecording = true;
-    console.log('Microphone recording started.');
 });
 
-sendButton.addEventListener('click', () => {
-    console.log('Send button clicked.');
+// Send transcript to the server
+function sendTranscript() {
     const transcript = document.querySelector('#transcript').textContent;
-    if (!transcript) {
-        console.log('No transcript available to send.');
-        alert('No transcript available to send.');
-        return;
-    }
+    if (!transcript) return alert('No transcript available to send.');
 
-    console.log('Sending transcript to the server.');
     fetch('http://127.0.0.1:5001/send_transcript', {
         method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ transcript }),
     })
     .then(response => response.json())
     .then(data => {
-        console.log('Response received from server:', data.message);
-        console.log('Server response content:', data.response);
         if (data.audio) {
-            console.log('Audio data received from server.');
+            // Play audio response from server
             const audio = new Audio(`data:audio/wav;base64,${data.audio}`);
-            audio.play().then(() => {
-                console.log('Audio playback started');
-            }).catch(error => {
-                console.error('Error playing audio:', error);
-            });
-        } else {
-            console.log('No audio data received from server.');
+            audio.play().catch(error => console.error('Audio playback error:', error));
         }
     })
-    .catch(error => {
-        console.error('Error:', error);
-    });
+    .catch(error => console.error('Error sending transcript:', error));
+}
+
+sendButton.addEventListener('click', sendTranscript);
+
+// Append fixed text to transcript
+appendTextButton.addEventListener('click', () => {
+    document.querySelector('#transcript').textContent += 'Hello ';
 });
