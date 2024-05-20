@@ -25,7 +25,7 @@ async def chat_completion(query):
         "Content-Type": "application/json"
     }
     payload = {
-        "model": "phi3",
+        "model": "mistral:instruct",
         "prompt": query
     }
     logging.info(f"----> Query sent to Ollama: {query}")
@@ -61,6 +61,11 @@ async def text_to_speech(voice_id, text):
                 "voice_settings": {"stability": 0.5, "similarity_boost": 0.8},
                 "xi_api_key": ELEVENLABS_API_KEY,
             }))
+            await websocket.send(json.dumps({
+                "text": "",
+                "voice_settings": {"stability": 0.5, "similarity_boost": 0.8},
+                "xi_api_key": ELEVENLABS_API_KEY,
+            }))
 
             audio_data = b""
             start_time = time.time()
@@ -68,10 +73,14 @@ async def text_to_speech(voice_id, text):
             while True:
                 try:
                     message = await websocket.recv()
-                    data = json.loads(message)
-                    if "audio" in data:
-                        audio_data += base64.b64decode(data["audio"])
-                    elif data.get('isFinal'):
+                    if message:
+                        data = json.loads(message)
+                        if "audio" in data:
+                            audio_data += base64.b64decode(data["audio"])
+                        elif data.get('isFinal'):
+                            break
+                    else:
+                        logging.warning("Received None message from WebSocket")
                         break
                 except websockets.exceptions.ConnectionClosed as e:
                     logging.error(f"WebSocket connection closed with error: {e}")
@@ -97,14 +106,13 @@ def return_speech():
         return jsonify({'message': 'No transcript provided'}), 400
     
     chat_history.append(f"(user): {transcript}")
+    chat_history.append("(your response): ")
     spaced_chat_history = "\n\n".join(chat_history)
 
     try:
         text_response = asyncio.run(chat_completion(spaced_chat_history))
-        
         audio_data = asyncio.run(text_to_speech(VOICE_ID, text_response))
-        logging.info("text_response received")
-        chat_history.append(f"(your response): {text_response}")
+        chat_history[-1] += text_response
         
         if audio_data:
             return jsonify({
