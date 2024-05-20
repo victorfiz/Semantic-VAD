@@ -1,6 +1,7 @@
 const activateButton = document.querySelector('#activate');
 const sendButton = document.querySelector('#send');
 const appendTextButton = document.querySelector('#appendText');
+const clearTranscriptButton = document.querySelector('#clearTranscript'); 
 appendTextButton.textContent = 'Append';
 document.body.appendChild(appendTextButton);
 
@@ -49,8 +50,8 @@ activateButton.addEventListener('click', () => {
     isRecording = true;
 });
 
-// Send transcript to the server
 function sendTranscript() {
+    // Send transcript to the server
     const transcript = document.querySelector('#transcript').textContent;
     if (!transcript) return alert('No transcript available to send.');
 
@@ -74,5 +75,10 @@ sendButton.addEventListener('click', sendTranscript);
 
 // Append fixed text to transcript
 appendTextButton.addEventListener('click', () => {
-    document.querySelector('#transcript').textContent += 'Hello ';
+    document.querySelector('#transcript').textContent += 'Very briefly name three types of bird ';
+});
+
+// Clear transcript content
+clearTranscriptButton.addEventListener('click', () => {
+    document.querySelector('#transcript').textContent = '';
 });

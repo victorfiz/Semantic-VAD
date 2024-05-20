@@ -7,32 +7,50 @@ import base64
 import logging
 from openai import AsyncOpenAI
 import time
+import requests
 
-# Configure logging
 logging.basicConfig(level=logging.INFO)
 
-# Define API keys
-OPENAI_API_KEY = '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'
 ELEVENLABS_API_KEY = 'd46e93087e0a30d3c77a28ba6bad8c8b'
 VOICE_ID = '21m00Tcm4TlvDq8ikWAM'
 
-# Set OpenAI API key
-aclient = AsyncOpenAI(api_key=OPENAI_API_KEY)
-
 app = Flask(__name__)
-CORS(app)  # Enable CORS for all routes
+CORS(app)
+
+chat_history = ["Instructions: Below is your conversation history. I want you to just output a short response to the user. Make your output extremely concise! Use umms and errs to sound human. I only want your response."]
 
 async def chat_completion(query):
+    url = "http://localhost:11434/api/generate"
+    headers = {
+        "Content-Type": "application/json"
+    }
+    payload = {
+        "model": "phi3",
+        "prompt": query
+    }
+    logging.info(f"----> Query sent to Ollama: {query}")
     try:
-        response = await aclient.chat.completions.create(
-            model='gpt-4-turbo',
-            messages=[{'role': 'user', 'content': query}],
-            temperature=1
-        )
-        return response.choices[0].message.content
+        response = requests.post(url, data=json.dumps(payload), headers=headers, stream=True)
+        logging.info(f"Ollama status code: {response.status_code}")
+        if response.status_code == 200:
+            accumulated_response = ""
+            try:
+                for line in response.iter_lines():
+                    if line:
+                        res = line.decode('utf-8')
+                        response_json = json.loads(res)
+                        accumulated_response += response_json.get("response", "")
+                        
+                logging.info(f"----> Ollama returned: {accumulated_response}")
+                return accumulated_response
+            except json.JSONDecodeError as e:
+                logging.error(f"Failed to decode JSON: {e}")
+        else:
+            logging.error(f"Failed to get response. Status code: {response.status_code}")
+            return ""
     except Exception as e:
-        logging.error(f"Error during OpenAI API call: {e}")
-        raise e
+        logging.error(f"Error connecting to local model: {e}")
+        return ""
 
 async def text_to_speech(voice_id, text):
     uri = f"wss://api.elevenlabs.io/v1/text-to-speech/{voice_id}/stream-input?model_id=eleven_monolingual_v1"
@@ -40,11 +58,6 @@ async def text_to_speech(voice_id, text):
         async with websockets.connect(uri, ping_interval=10, ping_timeout=5) as websocket:
             await websocket.send(json.dumps({
                 "text": text,
-                "voice_settings": {"stability": 0.5, "similarity_boost": 0.8},
-                "xi_api_key": ELEVENLABS_API_KEY,
-            }))
-            await websocket.send(json.dumps({
-                "text": "",
                 "voice_settings": {"stability": 0.5, "similarity_boost": 0.8},
                 "xi_api_key": ELEVENLABS_API_KEY,
             }))
@@ -76,24 +89,31 @@ async def text_to_speech(voice_id, text):
         return b""
 
 @app.route('/send_transcript', methods=['POST'])
-def handle_transcript():
+def return_speech():
+    global chat_history
     data = request.get_json()
     transcript = data.get('transcript')
     if not transcript:
         return jsonify({'message': 'No transcript provided'}), 400
+    
+    chat_history.append(f"(user): {transcript}")
+    spaced_chat_history = "\n\n".join(chat_history)
 
     try:
-        full_response = asyncio.run(chat_completion(transcript))
-        audio_data = asyncio.run(text_to_speech(VOICE_ID, full_response))
-
+        text_response = asyncio.run(chat_completion(spaced_chat_history))
+        
+        audio_data = asyncio.run(text_to_speech(VOICE_ID, text_response))
+        logging.info("text_response received")
+        chat_history.append(f"(your response): {text_response}")
+        
         if audio_data:
             return jsonify({
                 'message': 'Transcript processed and response generated successfully',
-                'response': full_response,
+                'response': text_response,
                 'audio': base64.b64encode(audio_data).decode('utf-8')
             }), 200
         else:
-            return jsonify({'message': 'Transcript processed, but no audio generated', 'response': full_response}), 500
+            return jsonify({'message': 'Transcript processed, but no audio generated', 'response': text_response}), 500
     except Exception as e:
         logging.error(f"Error processing transcript: {e}")
         return jsonify({'message': str(e)}), 500
