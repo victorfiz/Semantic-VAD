@@ -75,7 +75,7 @@ sendButton.addEventListener('click', sendTranscript);
 
 // Append fixed text to transcript
 appendTextButton.addEventListener('click', () => {
-    document.querySelector('#transcript').textContent += "Yes, Im interested in the robin";
+    document.querySelector('#transcript').textContent += "Tell me a quick fact about mammals";
 });
 
 // Clear transcript content
