@@ -7,12 +7,19 @@
 <body>
   <p>Hi</p>
   <p id="status">Not Connected</p>
+  
   <p id="transcript"></p>
+
   <button id="activate">Activate Microphone</button>
   <button id="send">Send Transcript</button>
   <button id="appendText">Append Text</button>
   <button id="clearTranscript">Clear Transcript</button>
+
   <p id="response"></p>
+
+  <!-- Include Socket.IO client library -->
+  <script src="https://cdn.socket.io/4.0.1/socket.io.min.js"></script>
+
   <script src="script.js"></script>
 </body>
 </html>
