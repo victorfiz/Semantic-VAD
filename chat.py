@@ -1,8 +1,11 @@
 import json
 import logging
 import requests
+import time
 
 async def chat_completion(query):
+    
+    start_time = time.time()
     url = "http://localhost:11434/api/generate"
     headers = {
         "Content-Type": "application/json"
@@ -23,8 +26,8 @@ async def chat_completion(query):
                         res = line.decode('utf-8')
                         response_json = json.loads(res)
                         accumulated_response += response_json.get("response", "")
-                        
-                logging.info(f"----> Ollama returned: {accumulated_response}")
+                time_taken = time.time() - start_time
+                logging.info(f"----> in {time_taken:.2f} seconds Ollama returned: {accumulated_response}")
                 return accumulated_response
             except json.JSONDecodeError as e:
                 logging.error(f"Failed to decode JSON: {e}")

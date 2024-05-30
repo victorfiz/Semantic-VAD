@@ -1,15 +1,13 @@
-const activateButton = document.querySelector('#activate');
-const sendButton = document.querySelector('#send');
-const appendTextButton = document.querySelector('#appendText');
-const clearTranscriptButton = document.querySelector('#clearTranscript'); 
-appendTextButton.textContent = 'Append';
-document.body.appendChild(appendTextButton);
-
 let isRecording = false;
 let mediaRecorder;
 
+document.querySelector('#activate').addEventListener('click', activateMicrophone);
+document.querySelector('#send').addEventListener('click', sendTranscript);
+document.querySelector('#appendText').addEventListener('click', appendText);
+document.querySelector('#clearTranscript').addEventListener('click', clearTranscript);
+
 // Handle microphone activation
-activateButton.addEventListener('click', () => {
+function activateMicrophone() {
     if (isRecording) return alert('Microphone is already activated.');
 
     navigator.mediaDevices.getUserMedia({ audio: true }).then((stream) => {
@@ -48,10 +46,10 @@ activateButton.addEventListener('click', () => {
     }).catch(error => console.error("Microphone access error:", error));
 
     isRecording = true;
-});
+}
 
+// Send transcript to the server
 function sendTranscript() {
-    // Send transcript to the server
     const transcript = document.querySelector('#transcript').textContent;
     if (!transcript) return alert('No transcript available to send.');
 
@@ -71,14 +69,10 @@ function sendTranscript() {
     .catch(error => console.error('Error sending transcript:', error));
 }
 
-sendButton.addEventListener('click', sendTranscript);
-
-// Append fixed text to transcript
-appendTextButton.addEventListener('click', () => {
+function appendText() {
     document.querySelector('#transcript').textContent += "Tell me a quick fact about mammals";
-});
+}
 
-// Clear transcript content
-clearTranscriptButton.addEventListener('click', () => {
+function clearTranscript() {
     document.querySelector('#transcript').textContent = '';
-});
+}
