@@ -8,10 +8,22 @@ app = Flask(__name__)
 CORS(app)
 socketio = SocketIO(app, cors_allowed_origins="*")
 
+chat_history = ["Instructions: Below is your conversation history. I want you to just output a short response to the user. Make your output extremely concise! Use umms and errs to sound human. I only want your response."]
+
 @app.route('/send_text', methods=['POST'])
 def send_text():
+    global chat_history
+
     data = request.get_json()
-    query = data['text']
+    transcript = data['text']
+    response = data['response']
+
+    chat_history[-1] += response
+
+    chat_history.append(f"(user): {transcript}")
+    chat_history.append("(your response): ")
+    query = "\n\n".join(chat_history)
+
     socketio.start_background_task(run_async_chat_completion, socketio, query)
     return jsonify({"status": "Processing"}), 202
 

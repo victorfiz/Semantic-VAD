@@ -63,6 +63,7 @@ function initializeAudioContext() {
 
 function sendTranscript() {
     const transcript = document.querySelector('#transcript').textContent;
+    const response = document.querySelector('#response').textContent;
     const responseField = document.querySelector('#response');
     responseField.textContent = '';  // Clear previous responses
 
@@ -94,7 +95,7 @@ function sendTranscript() {
     fetch('http://127.0.0.1:5001/send_text', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text: transcript }),
+        body: JSON.stringify({ text: transcript, response: response}),
     })
     .catch(error => {
         console.error('Error:', error);
