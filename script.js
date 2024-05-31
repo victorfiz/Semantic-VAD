@@ -1,10 +1,14 @@
 let isRecording = false;
 let mediaRecorder;
+let audioContext;
 
 document.querySelector('#activate').addEventListener('click', activateMicrophone);
 document.querySelector('#send').addEventListener('click', sendTranscript);
 document.querySelector('#appendText').addEventListener('click', appendText);
 document.querySelector('#clearTranscript').addEventListener('click', clearTranscript);
+document.querySelector('#stopSpeech').addEventListener('click', stopSpeech);
+document.querySelector('#startSpeech').addEventListener('click', startSpeech);
+
 
 // Handle microphone activation
 function activateMicrophone() {
@@ -49,8 +53,8 @@ function activateMicrophone() {
 }
 
 // Handle audio response
-let audioContext;
 let audioQueue = [];
+let allowAudio = true;
 
 function initializeAudioContext() {
     if (!audioContext) {
@@ -59,6 +63,16 @@ function initializeAudioContext() {
     if (audioContext.state === 'suspended') {
         audioContext.resume();
     }
+}
+
+function stopSpeech() {
+    allowAudio = false;
+    console.log('Speech output stopped');
+}
+
+function startSpeech() {
+    allowAudio = true;
+    console.log('Speech output started');
 }
 
 function sendTranscript() {
@@ -84,7 +98,7 @@ function sendTranscript() {
     });
 
     socket.on('audio', async function(data) {
-        if (data.audio) {
+        if (data.audio && allowAudio) {
             await queueAudio(base64ToArrayBuffer(data.audio));
         }
         if (data.done) {
@@ -111,7 +125,7 @@ async function queueAudio(audioBuffer) {
 }
 
 async function playNextInQueue() {
-    if (audioQueue.length > 0) {
+    if (audioQueue.length > 0 && allowAudio) {
         const buffer = audioQueue[0];
         try {
             const decodedData = await audioContext.decodeAudioData(buffer);
@@ -129,7 +143,10 @@ async function playNextInQueue() {
             audioQueue.shift(); // Remove the problematic audio buffer
             playNextInQueue();  // Try the next audio buffer in the queue
         }
+    } else if (audioQueue.length > 0 && !allowAudio) {
+        audioQueue = [];
     }
+    
 }
 
 function base64ToArrayBuffer(base64) {
