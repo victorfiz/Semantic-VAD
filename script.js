@@ -4,6 +4,7 @@ document.addEventListener('DOMContentLoaded', function() {
     let audioContext;
     let audioQueue = [];
     let allowAudio = true;
+    let keepAliveInterval;
 
     // Button event listeners
     document.querySelector('#activate').addEventListener('click', activateMicrophone);
@@ -13,94 +14,82 @@ document.addEventListener('DOMContentLoaded', function() {
     document.querySelector('#stopSpeech').addEventListener('click', stopSpeech);
     document.querySelector('#startSpeech').addEventListener('click', startSpeech);
 
-    const randomSocket = io('http://127.0.0.1:5001');
+    const vadSocket = io();
 
-    // Test random number generator
-    randomSocket.on('new_number', function(data) {
-        console.log(data.number);
+
+    vadSocket.on('audio_vad', function(data) {
+        console.log(data.audio);
     });
 
-    document.getElementById('startRandomGen').onclick = function() {
-        fetch('/send_num', { method: 'POST' })
-            .then(response => response.json())
-            .then(data => console.log(data.status))
-            .catch(error => console.error('Error:', error));
-    };
+    function captureMicrophoneAudio() {
+        navigator.mediaDevices.getUserMedia({ audio: true })
+            .then(stream => {
+                createAudioContext();
+                const source = audioContext.createMediaStreamSource(stream);
+                const processor = audioContext.createScriptProcessor(4096, 1, 1);
+                source.connect(processor);
+                processor.connect(audioContext.destination);
+                processor.onaudioprocess = function (e) {
+                    const audioData = e.inputBuffer.getChannelData(0);
+                    vadSocket.emit('vad_audio', audioData.buffer);
+                };
+            })
+            .catch(err => console.error('Error accessing audio stream:', err));
+    }    
 
-    // Activate microphone for audio recording
     function activateMicrophone() {
         if (isRecording) return alert('Microphone is already activated.');
-
         navigator.mediaDevices.getUserMedia({ audio: true }).then((stream) => {
             if (!MediaRecorder.isTypeSupported('audio/webm')) return alert('Browser not supported');
-
             mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm' });
-
-            // Connect to WebSocket for streaming audio
-            const socket = new WebSocket('wss://api.deepgram.com/v1/listen', [
-                'token',
-                '87d2d3f1ceaf2da21fe2975880013d45d2ef84b1',
-            ]);
-
+            const socket = new WebSocket('wss://api.deepgram.com/v1/listen', ['token', '87d2d3f1ceaf2da21fe2975880013d45d2ef84b1']);
             socket.onopen = () => {
                 document.querySelector('#status').textContent = 'Connected';
-
-                // Send audio data to WebSocket
                 mediaRecorder.addEventListener('dataavailable', (event) => {
                     if (event.data.size > 0 && socket.readyState === 1) {
                         socket.send(event.data);
                     }
                 });
-
                 mediaRecorder.start(1000);
             };
-
-            // Handle received transcription data
             socket.onmessage = (message) => {
                 const { channel: { alternatives }, is_final } = JSON.parse(message.data);
                 if (alternatives[0].transcript && is_final) {
                     document.querySelector('#transcript').textContent += alternatives[0].transcript + ' ';
                 }
             };
-
             socket.onerror = (error) => console.error('WebSocket error:', error);
         }).catch(error => console.error("Microphone access error:", error));
-
         isRecording = true;
     }
 
-    // Initialize audio context
-    function initializeAudioContext() {
+    function createAudioContext() {
         if (!audioContext) {
             audioContext = new (window.AudioContext || window.webkitAudioContext)();
-        }
-        if (audioContext.state === 'suspended') {
-            audioContext.resume();
+            keepAliveInterval = setInterval(() => {
+                if (audioContext.state === 'suspended') {
+                    audioContext.resume(); 
+                }
+            }, 100);
         }
     }
 
-    // Stop audio output
     function stopSpeech() {
         allowAudio = false;
         console.log('Speech output stopped');
     }
 
-    // Start audio output
     function startSpeech() {
         allowAudio = true;
         console.log('Speech output started');
     }
 
-    // Send transcript to server
     function sendTranscript() {
         const transcript = document.querySelector('#transcript').textContent;
         const responseField = document.querySelector('#response');
-        responseField.textContent = ''; // Clear previous responses
-
-        initializeAudioContext();
-
+        responseField.textContent = '';
+        createAudioContext();
         const socket = io('http://127.0.0.1:5001');
-
         socket.on('response', function(data) {
             if (data.text) {
                 responseField.textContent += data.text;
@@ -110,7 +99,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 socket.disconnect();
             }
         });
-
         socket.on('audio', async function(data) {
             if (data.audio && allowAudio) {
                 await queueAudio(base64ToArrayBuffer(data.audio));
@@ -119,19 +107,16 @@ document.addEventListener('DOMContentLoaded', function() {
                 socket.disconnect();
             }
         });
-
         fetch('http://127.0.0.1:5001/send_text', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ text: transcript }),
-        })
-        .catch(error => {
+            body: JSON.stringify({ text: transcript, response: '' }),
+        }).catch(error => {
             console.error('Error:', error);
             responseField.textContent = 'An error occurred';
         });
     }
 
-    // Queue audio data for playback
     async function queueAudio(audioBuffer) {
         audioQueue.push(audioBuffer);
         if (audioQueue.length === 1) {
@@ -139,7 +124,6 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    // Play next audio buffer in the queue
     async function playNextInQueue() {
         if (audioQueue.length > 0 && allowAudio) {
             const buffer = audioQueue[0];
@@ -149,7 +133,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 source.buffer = decodedData;
                 source.connect(audioContext.destination);
                 source.start(0);
-
                 source.onended = () => {
                     audioQueue.shift();
                     playNextInQueue();
@@ -164,7 +147,6 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    // Convert base64 to ArrayBuffer
     function base64ToArrayBuffer(base64) {
         const binaryString = window.atob(base64);
         const len = binaryString.length;
@@ -175,13 +157,20 @@ document.addEventListener('DOMContentLoaded', function() {
         return bytes.buffer;
     }
 
-    // Append predefined text to transcript
     function appendText() {
         document.querySelector('#transcript').textContent += "Tell me a quick fact about mammals";
     }
 
-    // Clear transcript content
     function clearTranscript() {
         document.querySelector('#transcript').textContent = '';
     }
+
+    captureMicrophoneAudio();
+
+    window.addEventListener('beforeunload', () => {
+        clearInterval(keepAliveInterval);
+        if (audioContext) {
+            audioContext.close();
+        }
+    });
 });
