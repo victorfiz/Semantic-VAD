@@ -42,7 +42,7 @@ def print_audio(socketio, audio_data):
         if not data_transmission_started:  # Check if transmission has not started
             print("Data transmission begins for audio_vad")  # Log message
             data_transmission_started = True  # Set the flag to True
-        socketio.emit('audio_vad', {'audio': vad_output})
+        socketio.emit('vad_decision', {'audio': vad_output})
 
 
 

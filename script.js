@@ -6,7 +6,6 @@ document.addEventListener('DOMContentLoaded', function() {
     let allowAudio = true;
     let keepAliveInterval;
 
-    // Button event listeners
     document.querySelector('#activate').addEventListener('click', activateMicrophone);
     document.querySelector('#send').addEventListener('click', sendTranscript);
     document.querySelector('#appendText').addEventListener('click', appendText);
@@ -16,8 +15,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     const vadSocket = io();
 
-
-    vadSocket.on('audio_vad', function(data) {
+    vadSocket.on('vad_decision', function(data) {
         console.log(data.audio);
     });
 
