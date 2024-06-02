@@ -38,9 +38,12 @@ def send_text():
 
 # Takes in audio from captureMicrophoneAudio(), emits vad_decision()'s vad_output
 @socketio.on('vad_audio')
-def handle_vad_audio(audio_data):
-    socketio.start_background_task(print_audio, socketio, audio_data)
-    return jsonify({"status": "Audio returning"}), 202
+def handle_vad_audio(data):
+    audio_data = data.get('audio')
+    transcript = data.get('transcript')
+
+    socketio.start_background_task(print_audio, socketio, audio_data, transcript)
+    return jsonify({"status": "Data received"}), 202
 
 if __name__ == '__main__':
     socketio.run(app, port=5001)

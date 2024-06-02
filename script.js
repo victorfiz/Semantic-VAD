@@ -17,6 +17,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     vadSocket.on('vad_decision', function(data) {
         console.log(data.audio);
+        console.log(data.transcript)
     });
 
     function captureMicrophoneAudio() {
@@ -29,7 +30,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 processor.connect(audioContext.destination);
                 processor.onaudioprocess = function (e) {
                     const audioData = e.inputBuffer.getChannelData(0);
-                    vadSocket.emit('vad_audio', audioData.buffer);
+                    vadSocket.emit('vad_audio', { audio: audioData.buffer });
                 };
             })
             .catch(err => console.error('Error accessing audio stream:', err));
@@ -53,7 +54,9 @@ document.addEventListener('DOMContentLoaded', function() {
             socket.onmessage = (message) => {
                 const { channel: { alternatives }, is_final } = JSON.parse(message.data);
                 if (alternatives[0].transcript && is_final) {
-                    document.querySelector('#transcript').textContent += alternatives[0].transcript + ' ';
+                    const transcriptElement = document.querySelector('#transcript');
+                    transcriptElement.textContent += alternatives[0].transcript + ' ';
+                    vadSocket.emit('vad_audio', { transcript: transcriptElement.textContent });
                 }
             };
             socket.onerror = (error) => console.error('WebSocket error:', error);

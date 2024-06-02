@@ -22,27 +22,34 @@ def resample(audio, orig_sr, target_sr):
     return resample_transform(audio)
 
 # main function
-def print_audio(socketio, audio_data):
+def print_audio(socketio, audio_data=None, transcript=None):
     global audio_buffer, vad_buffer, data_transmission_started
 
-    audio_samples = np.frombuffer(audio_data, dtype=np.float32)
-    audio_buffer.extend(audio_samples)
+    if audio_data:
+        audio_samples = np.frombuffer(audio_data, dtype=np.float32)
+        audio_buffer.extend(audio_samples)
 
-    vad_output = None  # Initialize vad_output
+        vad_output = None  # Initialize vad_output
 
-    if len(audio_buffer) % 44100 == 0:
-        audio_samples_writable = np.copy(audio_samples)
-        audio_samples_tensor = torch.from_numpy(audio_samples_writable).unsqueeze(0)
-        audio_samples_resampled = resample(audio_samples_tensor, orig_sr=44100, target_sr=16000)
-        
-        vad_output = validate(model, audio_samples_resampled, sr=16000)[0].item()
+        if len(audio_buffer) % 44100 == 0:
+            audio_samples_writable = np.copy(audio_samples)
+            audio_samples_tensor = torch.from_numpy(audio_samples_writable).unsqueeze(0)
+            audio_samples_resampled = resample(audio_samples_tensor, orig_sr=44100, target_sr=16000)
+            
+            vad_output = validate(model, audio_samples_resampled, sr=16000)[0].item()
 
-    # Ensure vad_output has a value before emitting
-    if vad_output is not None:
-        if not data_transmission_started:  # Check if transmission has not started
-            print("Data transmission begins for audio_vad")  # Log message
-            data_transmission_started = True  # Set the flag to True
-        socketio.emit('vad_decision', {'audio': vad_output})
+        # Ensure vad_output has a value before emitting
+        if vad_output is not None:
+            if not data_transmission_started:  # Check if transmission has not started
+                print("VAD decisions emitting to client")  # Log message
+                data_transmission_started = True  # Set the flag to True
+            socketio.emit('vad_decision', {'audio': vad_output})
+
+    if transcript:
+        socketio.emit('vad_decision', {'transcript': transcript})
+
+    
+
 
 
 
