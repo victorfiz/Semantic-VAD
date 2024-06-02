@@ -3,6 +3,7 @@
 <head>
   <meta charset="utf-8">
   <title>Speech Transcription and Response</title>
+  <script src="https://cdn.socket.io/4.0.1/socket.io.min.js"></script>
 </head>
 <body>
   <p>Hi</p>
@@ -16,12 +17,11 @@
   <button id="clearTranscript">Clear Transcript</button>
   <button id="stopSpeech">Stop Speech</button>
   <button id="startSpeech">Start Speech</button>
+  <button id="startRandomGen">Start Random Number Generator</button>
 
   <p id="response"></p>
-
-  <!-- Include Socket.IO client library -->
-  <script src="https://cdn.socket.io/4.0.1/socket.io.min.js"></script>
-
-  <script src="script.js"></script>
+  
+  <!-- <img id="chart" src="" alt="Amplitude Chart"> -->
+  <script src="/script.js"></script>
 </body>
 </html>

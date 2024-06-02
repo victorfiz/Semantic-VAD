@@ -21,8 +21,8 @@ async def text_chunker(chunks):
     if buffer:
         yield buffer + " "
 
-async def text_to_speech_input_streaming(socketio, voice_id, text_iterator):
-    uri = f"wss://api.elevenlabs.io/v1/text-to-speech/{voice_id}/stream-input?model_id=eleven_turbo_v2"
+async def text_to_speech_input_streaming(socketio, VOICE_ID, text_iterator):
+    uri = f"wss://api.elevenlabs.io/v1/text-to-speech/{VOICE_ID}/stream-input?model_id=eleven_turbo_v2"
 
     async with websockets.connect(uri) as websocket:
         await websocket.send(json.dumps({
