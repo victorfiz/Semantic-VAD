@@ -19,7 +19,7 @@ def script():
     return send_file('script.js')
 
 # Takes in response from /send_text, emits voice audio chat completion, and updates chat_history
-chat_history = ["Instructions: Below is your conversation history. I want you to just output a short response to the user. Make your output extremely concise! Use umms and errs to sound human. I only want your response."]
+chat_history = ["Instructions: Below is your conversation history. I want you to just output a short response to the user. Make your output extremely concise! Very occasionally use uhhm's to sound human. I only want your response."]
 
 @app.route('/send_text', methods=['POST'])
 def send_text():
@@ -34,6 +34,8 @@ def send_text():
     chat_history.append(f"(user): {transcript}")
     chat_history.append("(your response): ")
     query = "\n\n".join(chat_history)
+
+    print(chat_history)
 
     socketio.start_background_task(run_async_chat_completion, socketio, query)
     return jsonify({"status": "Processing"}), 202

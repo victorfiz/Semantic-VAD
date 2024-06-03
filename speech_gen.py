@@ -5,7 +5,7 @@ import websockets
 from config import ELEVENLABS_API_KEY, VOICE_ID
 
 async def text_chunker(chunks):
-    splitters = (".", ",", "?", "!", ";", ":", "—", "-", "(", ")", "[", "]", "}", " ")
+    splitters = (".", "?", "!", " ")
     buffer = ""
 
     async for chunk in chunks:
