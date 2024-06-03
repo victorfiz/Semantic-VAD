@@ -4,6 +4,8 @@ from flask_socketio import SocketIO
 
 from speech_gen import run_async_chat_completion
 from vad import print_audio
+from eos_prob import calculate_end_tokens_prob
+
 app = Flask(__name__)
 CORS(app)
 socketio = SocketIO(app, cors_allowed_origins="*")
@@ -41,6 +43,10 @@ def send_text():
 def handle_vad_audio(data):
     audio_data = data.get('audio')
     transcript = data.get('transcript')
+
+    if transcript:  # Check if transcript is not undefined
+        end_tokens_prob_sum = calculate_end_tokens_prob(transcript)
+        print(f"Sum of end tokens probabilities: {end_tokens_prob_sum}")
 
     socketio.start_background_task(print_audio, socketio, audio_data, transcript)
     return jsonify({"status": "Data received"}), 202
