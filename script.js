@@ -87,10 +87,14 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function sendTranscript() {
         const transcript = document.querySelector('#transcript').textContent;
+        const response = document.querySelector('#response').textContent;
         const responseField = document.querySelector('#response');
         responseField.textContent = '';
+
         createAudioContext();
+
         const socket = io('http://127.0.0.1:5001');
+        
         socket.on('response', function(data) {
             if (data.text) {
                 responseField.textContent += data.text;
@@ -100,6 +104,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 socket.disconnect();
             }
         });
+        
         socket.on('audio', async function(data) {
             if (data.audio && allowAudio) {
                 await queueAudio(base64ToArrayBuffer(data.audio));
@@ -111,7 +116,7 @@ document.addEventListener('DOMContentLoaded', function() {
         fetch('http://127.0.0.1:5001/send_text', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ text: transcript, response: '' }),
+            body: JSON.stringify({ text: transcript, response: response }),
         }).catch(error => {
             console.error('Error:', error);
             responseField.textContent = 'An error occurred';

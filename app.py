@@ -27,8 +27,8 @@ def send_text():
 
     data = request.get_json()
     transcript = data['text']
-    response = data.get('response', '')  
-
+    response = data['response']
+    
     chat_history[-1] += response
 
     chat_history.append(f"(user): {transcript}")
