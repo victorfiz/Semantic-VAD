@@ -16,8 +16,12 @@ document.addEventListener('DOMContentLoaded', function() {
     const vadSocket = io();
 
     vadSocket.on('vad_decision', function(data) {
-        console.log(data.audio);
-        console.log(data.transcript)
+        console.log(data.vad_output);
+        console.log(data.transcript);
+
+        // if (data && data.transcript !== undefined) {
+        //     console.log(data.transcript);
+        // }
     });
 
     function captureMicrophoneAudio() {
