@@ -5,6 +5,7 @@ document.addEventListener('DOMContentLoaded', function() {
     let audioQueue = [];
     let allowAudio = true;
     let keepAliveInterval;
+    let speakingStatus = false;
 
     document.querySelector('#activate').addEventListener('click', activateMicrophone);
     document.querySelector('#send').addEventListener('click', sendTranscript);
@@ -13,16 +14,29 @@ document.addEventListener('DOMContentLoaded', function() {
     document.querySelector('#stopSpeech').addEventListener('click', stopSpeech);
     document.querySelector('#startSpeech').addEventListener('click', startSpeech);
 
-    const vadSocket = io();
+    const vadSocket = io('http://localhost:5001');
 
     vadSocket.on('vad_decision', function(data) {
-        console.log(data.vad_output);
-        console.log(data.transcript);
-
-        // if (data && data.transcript !== undefined) {
-        //     console.log(data.transcript);
-        // }
+        // console.log(data.vad_output);
+        // console.log(data.transcript);
     });
+
+    vadSocket.on('speaking_status', function(data) {
+        console.log('Speaking status:', data.speaking);
+        handleSpeakingStatus(data.speaking);
+    });
+
+    function handleSpeakingStatus(speaking) {
+        if (speaking) {
+            stopSpeech(); // If True arrives, call stopSpeech
+        } else {
+            if (speakingStatus) {
+                sendTranscript(); // If False arrives and the current status is true, call sendTranscript
+            }
+            startSpeech(); // Always call startSpeech when False arrives
+        }
+        speakingStatus = speaking; // Update the speaking status
+    }
 
     function captureMicrophoneAudio() {
         navigator.mediaDevices.getUserMedia({ audio: true })
@@ -121,6 +135,8 @@ document.addEventListener('DOMContentLoaded', function() {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ text: transcript, response: response }),
+        }).then(() => {
+            document.querySelector('#transcript').textContent = '';
         }).catch(error => {
             console.error('Error:', error);
             responseField.textContent = 'An error occurred';

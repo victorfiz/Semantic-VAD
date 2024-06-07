@@ -1,3 +1,4 @@
+import requests
 import numpy as np
 from collections import deque
 import torch
@@ -85,11 +86,12 @@ def print_audio(socketio, audio_data=None, transcript=None):
 
                 speaking = False
                 print("speaking:", speaking)                   
-                
+                socketio.emit('speaking_status', {'speaking': speaking})
+
             if not speaking:
                 if vad_output > vad_threshold:
                     speaking = True
                     print("speaking:", speaking)
-
+                    socketio.emit('speaking_status', {'speaking': speaking})
 
 
