@@ -8,11 +8,8 @@ from eos_prob import calculate_end_tokens_prob
 torch.set_num_threads(1)
 
 audio_buffer = deque(maxlen=44100 * 5)
-vad_buffer = deque(maxlen=44100 * 5)
 data_transmission_started = False
-consecutive_below_threshold = 0
-vad_threshold = 0.4
-consecutive_threshold = 6
+vad_threshold = 0.35
 speaking = False
 previous_transcript = ""
 transcript_buffer = ""
@@ -31,8 +28,8 @@ def resample(audio, orig_sr, target_sr):
     return resample_transform(audio)
 
 def print_audio(socketio, audio_data=None, transcript=None):
-    global audio_buffer, vad_buffer, data_transmission_started
-    global consecutive_below_threshold, speaking, eos_prob
+    global audio_buffer, data_transmission_started
+    global speaking, eos_prob
     global previous_transcript, transcript_buffer
 
     if transcript:
@@ -62,33 +59,37 @@ def print_audio(socketio, audio_data=None, transcript=None):
                 data_transmission_started = True  
             socketio.emit('vad_decision', {'vad_output': vad_output})
             
-            print(f"vad:{vad_output:.3f}")
+            # print(f"vad:{vad_output:.3f}")
+            print(f"{'#' * (int(vad_output * 10)+1)}")
 
-            if speaking:
-                if vad_output < vad_threshold:
-                    consecutive_below_threshold += 1
-                else:
-                    consecutive_below_threshold = 0
+            if transcript != previous_transcript:
+                previous_transcript = transcript
+                print(f"trans: {transcript}")
+                cleaned_transcript = transcript.rstrip()
+                start_time = time.time()
+                eos_prob, top_tokens = calculate_end_tokens_prob(cleaned_transcript)
+                print(f"log_prob time: {(time.time() - start_time):.2f}")
+                eos_prob += 0.001
+                print(f"{eos_prob:.2f}")
+                # print(f"{eos_prob} eos_prob for trans: {transcript}")
 
-                if transcript != previous_transcript:
-                    previous_transcript = transcript
-                    print(f"new trans: {transcript}")
-                    start_time = time.time()
-                    eos_prob = calculate_end_tokens_prob(transcript) + 0.001
-                    print(f"log_prob calculated:{eos_prob} for trans: {transcript}")
+                wait_time = ((2 /(eos_prob ** 0.5))-2)
+                wait_time = min(wait_time, 4)
+                # print(f"Waiting for {wait_time:.2f} seconds. {log_probs_time:.2f} waited already. eos: {eos_prob} with {top_tokens}")
 
-                    wait_time = ((1 /eos_prob)-1)/2
+                while time.time() - start_time < wait_time:
+                    if vad_output > vad_threshold:
+                        print("broken")
+                        return
+                    time.sleep(0.1)
 
-                    while time.time() - start_time < wait_time:
-                        if vad_output > vad_threshold:
-                            break
-
-                    speaking = False
-                    print("speaking:", speaking)                    
-                    
-            else:
+                speaking = False
+                print("speaking:", speaking)                   
+                
+            if not speaking:
                 if vad_output > vad_threshold:
                     speaking = True
                     print("speaking:", speaking)
-                    consecutive_below_threshold = 0
+
+
 

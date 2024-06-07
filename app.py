@@ -48,8 +48,7 @@ def handle_vad_audio(data):
 
     if transcript:  # Check if transcript is not undefined
         end_tokens_prob_sum = calculate_end_tokens_prob(transcript)
-        print(f"Sum of end tokens probabilities: {end_tokens_prob_sum}")
-
+        # print(f"Sum of end tokens probabilities: {end_tokens_prob_sum}")
     socketio.start_background_task(print_audio, socketio, audio_data, transcript)
     return jsonify({"status": "Data received"}), 202
 

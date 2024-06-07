@@ -42,7 +42,8 @@ def get_top_tokens(input_sentence, top_k=100):
 def calculate_end_tokens_prob(input_sentence):
     top_tokens, end_tokens = get_top_tokens(input_sentence)
     end_tokens_probs = [value for key, value in top_tokens if key in end_tokens]
-    return sum(end_tokens_probs)
+    top_3_tokens = [token for token, _ in sorted(top_tokens, key=lambda x: x[1], reverse=True)[:3]]
+    return sum(end_tokens_probs), top_3_tokens
 
 if __name__ == "__main__":
     input_sentence = "Hello nice to meet you too"
