@@ -4,23 +4,117 @@
   <meta charset="utf-8">
   <title>Speech Transcription and Response</title>
   <script src="https://cdn.socket.io/4.0.1/socket.io.min.js"></script>
+  <style>
+    .absolute {
+      position: absolute;
+    }
+    .inset-0 {
+      top: 0;
+      right: 0;
+      bottom: 0;
+      left: 0;
+    }
+    .-z-10 {
+      z-index: -10;
+    }
+    .h-full {
+      height: 100%;
+    }
+    .w-full {
+      width: 100%;
+    }
+    .bg-white {
+      background-color: white;
+    }
+    .bg-pattern {
+      background-image: linear-gradient(to right, #8080800a 1px, transparent 1px), 
+                        linear-gradient(to bottom, #8080800a 1px, transparent 1px);
+      background-size: 14px 24px;
+    }
+    .flex-center {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100vh; /* Center vertically */
+    }
+    .button-activate {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      height: 3rem;
+      overflow: hidden;
+      border-radius: 0.375rem;
+      background-color: #171717;
+      padding: 0 1.5rem;
+      font-weight: 500;
+      color: #e5e5e5;
+      transition: background-color 0.3s, transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+    .button-activate .icon-container {
+      position: absolute;
+      left: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+      padding-left: 1rem;
+      transform: translateX(-100%);
+      opacity: 0;
+      transition: transform 0.3s, opacity 0.3s;
+    }
+    .button-activate:hover .icon-container {
+      transform: translateX(0);
+      opacity: 1;
+    }
+    .button-activate span {
+      transition: padding-left 0.3s;
+    }
+    .button-activate:hover span {
+      padding-left: 2rem;
+    }
+    .button-activate:active {
+      transform: translateY(-0.25rem) scaleX(0.90) scaleY(1.10);
+    }
+    .status {
+      position: absolute;
+      bottom: 5px;
+      left: 10px;
+      font-size: 0.5rem;
+      color: #c5c5c5;
+      font-family: Arial, Helvetica, sans-serif;
+    }
+    .hidden-button {
+      display: none;
+    }
+  </style>
 </head>
 <body>
-  <p>Hi</p>
-  <p id="status">Not Connected</p>
+  <div class="absolute inset-0 -z-10 h-full w-full bg-white bg-pattern"></div>
+
+  <div class="flex-center">
+    <button id="activate" class="button-activate">
+      <div class="icon-container">
+        <svg width="15" height="15" viewBox="0 0 15 15" fill="none" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5">
+          <path d="M8.14645 3.14645C8.34171 2.95118 8.65829 2.95118 8.85355 3.14645L12.8536 7.14645C13.0488 7.34171 13.0488 7.65829 12.8536 7.85355L8.85355 11.8536C8.65829 12.0488 8.34171 12.0488 8.14645 11.8536C7.95118 11.6583 7.95118 11.3417 8.14645 11.1464L11.2929 8H2.5C2.22386 8 2 7.77614 2 7.5C2 7.22386 2.22386 7 2.5 7H11.2929L8.14645 3.85355C7.95118 3.65829 7.95118 3.34171 8.14645 3.14645Z" fill="currentColor" fill-rule="evenodd" clip-rule="evenodd"></path>
+        </svg>
+      </div>
+      <span><b>Start Application</b></span>
+    </button>
+  </div>
+
+  <p id="status" class="status"><b>Not Connected</b></p>
   
   <p id="transcript"></p>
 
-  <button id="activate">Activate Microphone</button>
-  <button id="send">Send Transcript</button>
-  <button id="appendText">Append Text</button>
-  <button id="clearTranscript">Clear Transcript</button>
-  <button id="stopSpeech">Stop Speech</button>
-  <button id="startSpeech">Start Speech</button>
-
+  <button id="send" class="hidden-button">Send Transcript</button>
+  <button id="appendText" class="hidden-button">Append Text</button>
+  <button id="clearTranscript" class="hidden-button">Clear Transcript</button>
+  <button id="stopSpeech" class="hidden-button">Stop Speech</button>
+  <button id="startSpeech" class="hidden-button">Start Speech</button>
+  
   <p id="response"></p>
   
-  <!-- <img id="chart" src="" alt="Amplitude Chart"> -->
   <script src="/script.js"></script>
 </body>
 </html>
