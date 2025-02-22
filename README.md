@@ -3,7 +3,12 @@
 ## Overview
 Traditional **VAD** relies soley on audio cues like energy levels and spectral tilt to detect speech. This leads to early cut-offs when the user pauses to think, or excessive delays when the user finishes speaking. 
 
+<div align="center">
+  <img src="Traditional%20VAD%20with%20tail-silence.png" alt="Alt Text" width="550">
+</div>
+
 **Semantic VAD** adds a GPT-2-based prediction model to understand whether the user has actually finished what they are saying. The model iteratively predicts the sum probability of the next token bein an end-of-sentence (EOS) marker (e.g., ".", "?", "!").
+
 
 ### Installation
 ```sh
@@ -45,6 +50,11 @@ victorfiz-speech/
 ```
 
 ## Key Functionalities
+
+<div align="center">
+  <img src="Semantic%20VAD%20Speech-to-Speech%20Model.png" alt="Semantic VAD Speech-to-Speech Model" width="1000">
+</div>
+
 ### `app.py`
 - Runs a Flask server with WebSocket (SocketIO) support.
 - Handles incoming transcripts and generates responses asynchronously.
