@@ -4,11 +4,14 @@ import pickle
 import os
 from huggingface_hub import login
 from collections import OrderedDict
+from config.config import HUGGINGFACE_TOKEN
 
 def load_and_save_models():
     start_time = time.time()
 
-    my_token = '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'
+    if not HUGGINGFACE_TOKEN:
+        raise ValueError("HUGGINGFACE_TOKEN environment variable is not set")
+        
     user_home = os.path.expanduser('~')  # Get the path to the user's home directory
     token_path = os.path.join(user_home, '.cache/huggingface/token')  # Change the token path to user's home directory
     my_model = "gpt2"
@@ -20,12 +23,12 @@ def load_and_save_models():
 
     # Login and set the environment variable if the token path does not exist
     if not os.path.exists(token_path):
-        login(token=my_token, add_to_git_credential=True)
-        os.environ['HF_TOKEN'] = my_token
+        login(token=HUGGINGFACE_TOKEN, add_to_git_credential=True)
+        os.environ['HF_TOKEN'] = HUGGINGFACE_TOKEN
 
     # Load tokenizer and model
-    tokenizer = AutoTokenizer.from_pretrained(my_model, token=my_token)
-    model = AutoModelForCausalLM.from_pretrained(my_model, token=my_token)
+    tokenizer = AutoTokenizer.from_pretrained(my_model, token=HUGGINGFACE_TOKEN)
+    model = AutoModelForCausalLM.from_pretrained(my_model, token=HUGGINGFACE_TOKEN)
 
     try:
         with open(os.path.join(save_dir, 'tokenizer.pkl'), 'wb') as f:

@@ -1,2 +1,0 @@
-ELEVENLABS_API_KEY = ''
-VOICE_ID = ''

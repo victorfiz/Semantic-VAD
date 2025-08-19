@@ -2,9 +2,10 @@ from flask import Flask, request, jsonify, send_file
 from flask_cors import CORS
 from flask_socketio import SocketIO
 
-from speech_gen import run_async_chat_completion
-from vad import print_audio
-from eos_prob import calculate_end_tokens_prob
+from src.core.speech_gen import run_async_chat_completion
+from src.core.vad import print_audio
+from src.core.eos_prob import calculate_end_tokens_prob
+from config.config import DEEPGRAM_API_KEY
 
 app = Flask(__name__)
 CORS(app)
@@ -12,11 +13,17 @@ socketio = SocketIO(app, cors_allowed_origins="*")
 
 @app.route('/')
 def index():
-    return send_file('index.html')
+    return send_file('src/web/index.html')
 
 @app.route('/script.js')
 def script():
-    return send_file('script.js')
+    return send_file('src/web/script.js')
+
+@app.route('/api/config')
+def get_config():
+    return jsonify({
+        'deepgramApiKey': DEEPGRAM_API_KEY
+    })
 
 # Takes in response from /send_text, emits voice audio chat completion, and updates chat_history
 chat_history = ["Instructions: Below is your conversation history. I want you to just output a short response to the user. Make your output extremely concise! Very occasionally use uhhm's to sound human. I only want your response."]

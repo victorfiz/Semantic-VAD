@@ -2,7 +2,7 @@ import asyncio
 import aiohttp
 import json
 import websockets
-from config import ELEVENLABS_API_KEY, VOICE_ID
+from config.config import ELEVENLABS_API_KEY, VOICE_ID
 
 async def text_chunker(chunks):
     splitters = (".", "?", "!", " ")

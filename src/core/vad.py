@@ -4,7 +4,7 @@ from collections import deque
 import torch
 import torchaudio
 import time
-from eos_prob import calculate_end_tokens_prob
+from src.core.eos_prob import calculate_end_tokens_prob
 
 torch.set_num_threads(1)
 

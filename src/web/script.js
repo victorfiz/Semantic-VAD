@@ -6,6 +6,15 @@ document.addEventListener('DOMContentLoaded', function() {
     let allowAudio = true;
     let keepAliveInterval;
     let speakingStatus = false;
+    let deepgramApiKey = null;
+
+    // Load API configuration
+    fetch('/api/config')
+        .then(response => response.json())
+        .then(config => {
+            deepgramApiKey = config.deepgramApiKey;
+        })
+        .catch(err => console.error('Error loading config:', err));
 
     document.querySelector('#activate').addEventListener('click', activateMicrophone);
     document.querySelector('#send').addEventListener('click', sendTranscript);
@@ -56,10 +65,12 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function activateMicrophone() {
         if (isRecording) return alert('Microphone is already activated.');
+        if (!deepgramApiKey) return alert('API key not loaded. Please refresh the page.');
+        
         navigator.mediaDevices.getUserMedia({ audio: true }).then((stream) => {
             if (!MediaRecorder.isTypeSupported('audio/webm')) return alert('Browser not supported');
             mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm' });
-            const socket = new WebSocket('wss://api.deepgram.com/v1/listen', ['token', '87d2d3f1ceaf2da21fe2975880013d45d2ef84b1']);
+            const socket = new WebSocket('wss://api.deepgram.com/v1/listen', ['token', deepgramApiKey]);
             socket.onopen = () => {
                 document.querySelector('#status').textContent = 'Connected';
                 mediaRecorder.addEventListener('dataavailable', (event) => {

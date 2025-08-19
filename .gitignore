@@ -5,3 +5,16 @@ __pycache__/
 .DS_Store
 model_data
 
+# Environment variables
+.env
+.env.local
+.env.production
+.env.staging
+
+# IDE files
+.vscode/
+.idea/
+
+# Logs
+*.log
+
